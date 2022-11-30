@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -9,41 +8,40 @@ using Microsoft.Extensions.Logging;
 using AzureMonitorAlertToSlack.Services.Implementations;
 using AzureMonitorAlertToSlack.Services.Slack;
 using AzureMonitorAlertToSlack.Services;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Linq;
 using System.Net.Http;
 using AzureMonitorAlertToSlack.Services.LogQuery;
 
 namespace AzureFunctionAlert2Slack
 {
-    public static class HttpAlertToSlack
+    public class HttpAlertToSlack
     {
-        //[FunctionName("HttpAlertToSlack")]
-        //public static async Task<IActionResult> Run(
-        //    [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-        //    RequestToSlackFunction function,
-        //    ILogger log)
-        //{
-        //    return await function.Run(req);
-        //}
+        private RequestToSlackFunction? function;
+
+        public HttpAlertToSlack(RequestToSlackFunction? function = null)
+        {
+            this.function = function;
+        }
 
         [FunctionName("HttpAlertToSlack")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, ILogger log)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, ILogger log)
         {
-            ILogQueryServiceFactory? logQueryServiceFactory = 
-                Environment.GetEnvironmentVariable("UseLogQueryService") == "1" 
-                ? CreateLogQueryServiceFactory()
-                : null;
+            if (function == null)
+            {
+                log.LogError("Dependency injection didn't work");
+                ILogQueryServiceFactory? logQueryServiceFactory =
+                    Environment.GetEnvironmentVariable("UseLogQueryService") == "1"
+                    ? CreateLogQueryServiceFactory()
+                    : null;
 
-            var logger = new LoggerWrapper<RequestToSlackFunction>(log);
-            var function = new RequestToSlackFunction(
-                new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
-                new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create())), new SlackMessageFactory()), logger);
+                var logger = new LoggerWrapper<RequestToSlackFunction>(log);
+                function = new RequestToSlackFunction(
+                    new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
+                    new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create())), new SlackMessageFactory()), logger);
+            }
 
             return await function.Run(req);
         }
+
 
         private class LoggerWrapper<T> : ILogger<T>
         {
@@ -64,8 +62,8 @@ namespace AzureFunctionAlert2Slack
             var ai = new AppInsightsQueryService(
                         new AppInsightsQueryService.ApplicationInsightsClient(
                             AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(HttpClientFactory.Create(),
-                            Environment.GetEnvironmentVariable("workspaceId") ?? "",
-                            Environment.GetEnvironmentVariable("workspaceId") ?? ""))
+                            Environment.GetEnvironmentVariable("ApplicationInsightsAppId") ?? "",
+                            Environment.GetEnvironmentVariable("ApplicationInsightsApiKey") ?? ""))
                         );
 
             return new LogQueryServiceFactory(la, ai);
