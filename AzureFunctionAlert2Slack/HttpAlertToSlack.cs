@@ -19,20 +19,14 @@ namespace AzureFunctionAlert2Slack
 {
     public static class HttpAlertToSlack
     {
-
         //[FunctionName("HttpAlertToSlack")]
         //public static async Task<IActionResult> Run(
         //    [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-        //    IAlertInfoFactory alertInfoFactory, IMessageSender sender,
+        //    RequestToSlackFunction function,
         //    ILogger log)
         //{
-        //    return await RunInternal(req, alertInfoFactory, sender, log);
+        //    return await function.Run(req);
         //}
-
-        public static async Task<IActionResult> Run(HttpRequest req, RequestToSlackFunction function, ILogger log)
-        {
-            return await function.Run(req);
-        }
 
         [FunctionName("HttpAlertToSlack")]
         public static async Task<IActionResult> Run(
@@ -54,16 +48,12 @@ namespace AzureFunctionAlert2Slack
         private class LoggerWrapper<T> : ILogger<T>
         {
             private readonly ILogger log;
-
             public LoggerWrapper(ILogger log)
             {
                 this.log = log;
             }
-
             public IDisposable BeginScope<TState>(TState state) => log.BeginScope(state);
-
             public bool IsEnabled(LogLevel logLevel) => log.IsEnabled(logLevel);
-
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
                 => log.Log(logLevel, eventId, state, exception, formatter);
         }
