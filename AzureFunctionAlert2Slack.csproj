@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JWMB.AzureMonitorAlertToSlack" Version="0.0.1" />
+    <PackageReference Include="JWMB.AzureMonitorAlertToSlack" Version="0.0.2" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.1.3" />
