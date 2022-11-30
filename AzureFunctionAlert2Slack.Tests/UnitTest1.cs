@@ -35,7 +35,7 @@ namespace AzureFunctionAlert2Slack.Tests
             Should.NotThrow(sp.GetRequiredService<IMessageSender>);
             Should.NotThrow(sp.GetRequiredService<IAlertInfoFactory>);
 
-            var func = sp.GetRequiredService<RequestToSlackFunction>();
+            Should.NotThrow(sp.GetRequiredService<RequestToSlackFunction>);
         }
     }
 }
