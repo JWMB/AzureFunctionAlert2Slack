@@ -30,8 +30,9 @@ namespace AzureFunctionAlert2Slack
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, ILogger log)
         {
+            ILogQueryServiceFactory? logQueryServiceFactory = Environment.GetEnvironmentVariable("UseLogQueryService") == "1" ? new LogQueryServiceFactory() : null;
             return await RunInternal(req, 
-                new AlertInfoFactory(new DemuxedAlertInfoHandler(new LogQueryServiceFactory())),
+                new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
                 new SlackMessageSender(new SlackSenderFallback(), new SlackMessageFactory()), log);
         }
 
