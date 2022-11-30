@@ -11,9 +11,11 @@ namespace AzureFunctionAlert2Slack
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddHttpClient();
+            //builder.Services.AddHttpClient();
 
-            builder.Services.AddSingleton<ISlackSender>(sp => new SlackSenderFallback());
+            builder.Services.AddHttpClient<SlackClient>(c => SlackClient.Configure(c));
+
+            builder.Services.AddSingleton<ISlackClient, SlackClient>();
 
             builder.Services.AddSingleton<ILogQueryServiceFactory, LogQueryServiceFactory>();
             builder.Services.AddSingleton<IDemuxedAlertHandler, DemuxedAlertInfoHandler>();

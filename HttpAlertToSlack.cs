@@ -11,6 +11,9 @@ using AzureMonitorAlertToSlack.Services.Slack;
 using AzureMonitorAlertToSlack.Services;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
+using System.Net.Http;
+using AzureMonitorAlertToSlack.Services.LogQuery;
 
 namespace AzureFunctionAlert2Slack
 {
@@ -30,11 +33,29 @@ namespace AzureFunctionAlert2Slack
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, ILogger log)
         {
-            ILogQueryServiceFactory? logQueryServiceFactory = Environment.GetEnvironmentVariable("UseLogQueryService") == "1" ? new LogQueryServiceFactory() : null;
+            ILogQueryServiceFactory? logQueryServiceFactory = 
+                Environment.GetEnvironmentVariable("UseLogQueryService") == "1" 
+                ? CreateLogQueryServiceFactory()
+                : null;
+
             return await RunInternal(req, 
                 new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
-                new SlackMessageSender(new SlackSenderFallback(), new SlackMessageFactory()), log);
+                new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create())), new SlackMessageFactory()), log);
         }
+
+        private static ILogQueryServiceFactory CreateLogQueryServiceFactory()
+        {
+            var la = new LogAnalyticsQueryService(Environment.GetEnvironmentVariable("workspaceId") ?? "");
+            var ai = new AppInsightsQueryService(
+                        new AppInsightsQueryService.ApplicationInsightsClient(
+                            AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(HttpClientFactory.Create(),
+                            Environment.GetEnvironmentVariable("workspaceId") ?? "",
+                            Environment.GetEnvironmentVariable("workspaceId") ?? ""))
+                        );
+
+            return new LogQueryServiceFactory(la, ai);
+        }
+
 
         private static async Task<IActionResult> RunInternal(HttpRequest req, IAlertInfoFactory alertInfoFactory, IMessageSender sender, ILogger log)
         {
@@ -62,6 +83,11 @@ namespace AzureFunctionAlert2Slack
                     new AlertInfo{ Title = "Unknown alert", Text = ex.Message },
                     new AlertInfo{ Title = "Body", Text = requestBody }
                 };
+            }
+
+            if (Environment.GetEnvironmentVariable("DebugPayload") == "1") // TODO: change when DI problem solved
+            {
+                items.Last().Text += $"\\n{requestBody}";
             }
 
             try
