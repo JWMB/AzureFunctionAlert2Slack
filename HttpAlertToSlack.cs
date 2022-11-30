@@ -10,16 +10,32 @@ using AzureMonitorAlertToSlack.Services.Implementations;
 using AzureMonitorAlertToSlack.Services.Slack;
 using AzureMonitorAlertToSlack.Services;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace AzureFunctionAlert2Slack
 {
     public static class HttpAlertToSlack
     {
+
+        //[FunctionName("HttpAlertToSlack")]
+        //public static async Task<IActionResult> Run(
+        //    [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+        //    IAlertInfoFactory alertInfoFactory, IMessageSender sender,
+        //    ILogger log)
+        //{
+        //    return await RunInternal(req, alertInfoFactory, sender, log);
+        //}
+
         [FunctionName("HttpAlertToSlack")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-            IAlertInfoFactory alertInfoFactory, IMessageSender sender,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            return await RunInternal(req, 
+                new AlertInfoFactory(new DemuxedAlertInfoHandler(new LogQueryServiceFactory())),
+                new SlackMessageSender(new SlackSenderFallback(), new SlackMessageFactory()), log);
+        }
+
+        private static async Task<IActionResult> RunInternal(HttpRequest req, IAlertInfoFactory alertInfoFactory, IMessageSender sender, ILogger log)
         {
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             //log.LogInformation(requestBody);
