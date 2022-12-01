@@ -20,5 +20,17 @@
 
             }
         }
+
+        public static string ConfigToAzureSettingsString(Dictionary<string, string> dictionary)
+        {
+            return System.Text.Json.JsonSerializer.Serialize(
+                dictionary.Select(o => new
+                { 
+                    name = o.Key,
+                    value = o.Value,
+                    slotSetting = false
+                }),
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
     }
 }
