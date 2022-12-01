@@ -5,11 +5,10 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AzureMonitorAlertToSlack.Services.Implementations;
-using AzureMonitorAlertToSlack.Services.Slack;
-using AzureMonitorAlertToSlack.Services;
 using System.Net.Http;
-using AzureMonitorAlertToSlack.Services.LogQuery;
+using AzureMonitorAlertToSlack.LogQuery;
+using AzureMonitorAlertToSlack.Alerts;
+using AzureMonitorAlertToSlack.Slack;
 
 namespace AzureFunctionAlert2Slack
 {

@@ -1,10 +1,10 @@
-using AzureMonitorAlertToSlack.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 using Shouldly;
 using AzureMonitorAlertToSlack;
-using AzureMonitorAlertToSlack.Services.LogQuery;
+using AzureMonitorAlertToSlack.LogQuery;
+using AzureMonitorAlertToSlack.Slack;
+using AzureMonitorAlertToSlack.Alerts;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
@@ -32,12 +32,12 @@ namespace AzureFunctionAlert2Slack.Tests
                         WorkspaceId = "1"
                     }
                 },
-                Slack = new AzureMonitorAlertToSlack.Services.Slack.SlackSettings
+                Slack = new SlackSettings
                 {
                     DefaultWebhook = "1"
                 }
             };
-            var flatDict = ObjectToFlatDictionary(appSettings, "AppSettings").ToDictionary(o => o.key, o => o.value);
+            var flatDict = ConfigurationHelpers.ObjectToFlatDictionary(appSettings, "AppSettings").ToDictionary(o => o.key, o => o.value);
 
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(flatDict)
@@ -64,25 +64,6 @@ namespace AzureFunctionAlert2Slack.Tests
                     Should.Throw<Exception>(action);
                 else
                     Should.NotThrow(action);
-            }
-        }
-
-        public static IEnumerable<(string key, string value)> ObjectToFlatDictionary(object obj, string path = "")
-        {
-            var type = obj.GetType();
-            var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).Where(o => o.CanWrite);
-            foreach (var prop in properties)
-            {
-                var fullPath = $"{(path.Any() ? $"{path}:" : "")}{prop.Name}";
-                var val = prop.GetValue(obj);
-                if (val == null)
-                    ; // yield return (fullPath, "");
-                else if (val.GetType().IsClass && val is not string)
-                    foreach (var item in ObjectToFlatDictionary(val, fullPath))
-                        yield return item;
-                else
-                    yield return (fullPath, val.ToString() ?? "");
-
             }
         }
     }

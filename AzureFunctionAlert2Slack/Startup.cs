@@ -1,14 +1,10 @@
-﻿using AzureMonitorAlertToSlack.Services.Slack;
-using AzureMonitorAlertToSlack.Services;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using AzureMonitorAlertToSlack.Services.Implementations;
-using AzureMonitorAlertToSlack.Services.LogQuery;
 using Microsoft.Extensions.Configuration;
-using System;
 using AzureMonitorAlertToSlack;
-using System.Collections.Generic;
-using System.Linq;
+using AzureMonitorAlertToSlack.Slack;
+using AzureMonitorAlertToSlack.LogQuery;
+using AzureMonitorAlertToSlack.Alerts;
 
 [assembly: FunctionsStartup(typeof(AzureFunctionAlert2Slack.Startup))]
 namespace AzureFunctionAlert2Slack

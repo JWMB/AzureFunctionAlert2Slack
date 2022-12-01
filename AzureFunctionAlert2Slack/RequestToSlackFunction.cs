@@ -1,4 +1,5 @@
-﻿using AzureMonitorAlertToSlack.Services;
+﻿using AzureMonitorAlertToSlack;
+using AzureMonitorAlertToSlack.Alerts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -6,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AzureFunctionAlert2Slack
@@ -26,13 +26,14 @@ namespace AzureFunctionAlert2Slack
 
         public async Task<IActionResult> Run(HttpRequest req)
         {
+            if (req.Body.Length == 0)
+                return new BadRequestObjectResult($"Body was null");
+
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             //log.LogInformation(requestBody);
 
-            if (requestBody == null)
-            {
-                return new BadRequestObjectResult($"Body was null");
-            }
+            if (string.IsNullOrEmpty(requestBody))
+                return new BadRequestObjectResult($"Body was {(requestBody == null ? "null" : "empty")}");
 
             List<AlertInfo> items;
             Exception? parseException = null;
