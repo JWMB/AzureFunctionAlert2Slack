@@ -6,6 +6,7 @@ using AzureMonitorAlertToSlack.Services.Implementations;
 using AzureMonitorAlertToSlack.Services.LogQuery;
 using Microsoft.Extensions.Configuration;
 using System;
+using AzureMonitorAlertToSlack;
 
 [assembly: FunctionsStartup(typeof(AzureFunctionAlert2Slack.Startup))]
 namespace AzureFunctionAlert2Slack
@@ -22,6 +23,7 @@ namespace AzureFunctionAlert2Slack
             services.AddHttpClient<SlackClient>(c => SlackClient.Configure(c));
             services.AddSingleton<ISlackClient, SlackClient>();
 
+            TypedConfiguration.ConfigureTypedConfiguration<AppSettings>(services, config, "AppSettings");
             if (config.GetValue("UseLogQueryService", "") == "1")
             {
                 services.AddHttpClient<AppInsightsQueryService.ApplicationInsightsClient>(

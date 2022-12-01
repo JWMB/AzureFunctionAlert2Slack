@@ -36,7 +36,7 @@ namespace AzureFunctionAlert2Slack
                 var logger = new LoggerWrapper<RequestToSlackFunction>(log);
                 function = new RequestToSlackFunction(
                     new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
-                    new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create())), new SlackMessageFactory()), logger);
+                    new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create()), new SlackSettings { DefaultWebhook = Environment.GetEnvironmentVariable("slackWebhook") ?? "" }), new SlackMessageFactory()), logger);
             }
 
             return await function.Run(req);
@@ -58,15 +58,26 @@ namespace AzureFunctionAlert2Slack
 
         private static ILogQueryServiceFactory CreateLogQueryServiceFactory()
         {
-            var la = new LogAnalyticsQueryService(Environment.GetEnvironmentVariable("workspaceId") ?? "");
+            var logQuerySettings = new LogQuerySettings
+            {
+                ApplicationInsights = new ApplicationInsightsQuerySettings
+                {
+                    AppId = Environment.GetEnvironmentVariable("ApplicationInsightsAppId") ?? "",
+                    ApiKey = Environment.GetEnvironmentVariable("ApplicationInsightsApiKey") ?? ""
+                },
+                Enabled = true,
+                Timeout = 20,
+                LogAnalytics = new LogAnalyticsQuerySettings
+                {
+                    WorkspaceId = Environment.GetEnvironmentVariable("workspaceId") ?? ""
+                }
+            };
+            var la = new LogAnalyticsQueryService(logQuerySettings.LogAnalytics);
             var ai = new AppInsightsQueryService(
                         new AppInsightsQueryService.ApplicationInsightsClient(
-                            AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(HttpClientFactory.Create(),
-                            Environment.GetEnvironmentVariable("ApplicationInsightsAppId") ?? "",
-                            Environment.GetEnvironmentVariable("ApplicationInsightsApiKey") ?? ""))
-                        );
+                            AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(HttpClientFactory.Create(), logQuerySettings.ApplicationInsights)));
 
-            return new LogQueryServiceFactory(la, ai);
+            return new LogQueryServiceFactory(logQuerySettings, la, ai);
         }
     }
 }
