@@ -8,7 +8,7 @@ namespace AzureFunctionAlert2Slack
 {
     public class TypedConfiguration
     {
-        public static void ConfigureTypedConfiguration<T>(IServiceCollection services, IConfiguration config, string sectionName)
+        public static T ConfigureTypedConfiguration<T>(IServiceCollection services, IConfiguration config, string sectionName, bool throwOnMissing = true)
             where T : new()
         {
             // TODO: (low) continue investigation - how to avoid reflection and get validation errors immediately
@@ -27,32 +27,42 @@ namespace AzureFunctionAlert2Slack
             foreach (var prop in props)
             {
                 var instance = prop.GetValue(appSettings);
-                //config.GetSection(prop.Name).Bind(instance);
-                services.AddSingleton(instance!.GetType(), instance!);
-
-                //var asOptions = Microsoft.Extensions.Options.Options.Create(instance);
-                //services.ConfigureOptions(instance);
-
-                // Execute validation (if available)
-                var validatorType = instance.GetType().Assembly.GetTypes()
-                   .Where(t =>
-                   {
-                       var validatorInterface = t.GetInterfaces().SingleOrDefault(o =>
-                       o.IsGenericType && o.GetGenericTypeDefinition() == typeof(Microsoft.Extensions.Options.IValidateOptions<>));
-                       return validatorInterface != null && validatorInterface.GenericTypeArguments.Single() == instance.GetType();
-                   }).FirstOrDefault();
-
-                if (validatorType != null)
+                if (instance == null)
                 {
-                    var validator = Activator.CreateInstance(validatorType);
-                    var m = validatorType.GetMethod("Validate");
-                    var result = (Microsoft.Extensions.Options.ValidateOptionsResult?)m?.Invoke(validator, new object[] { "", instance });
-                    if (result!.Failed)
+                    if (throwOnMissing)
+                        throw new NullReferenceException($"{prop.Name} does not exist");
+                }
+                else
+                {
+                    //config.GetSection(prop.Name).Bind(instance);
+                    services.AddSingleton(instance.GetType(), instance!);
+
+                    //var asOptions = Microsoft.Extensions.Options.Options.Create(instance);
+                    //services.ConfigureOptions(instance);
+
+                    // Execute validation (if available)
+                    var validatorType = instance.GetType().Assembly.GetTypes()
+                       .Where(t =>
+                       {
+                           var validatorInterface = t.GetInterfaces().SingleOrDefault(o =>
+                           o.IsGenericType && o.GetGenericTypeDefinition() == typeof(Microsoft.Extensions.Options.IValidateOptions<>));
+                           return validatorInterface != null && validatorInterface.GenericTypeArguments.Single() == instance.GetType();
+                       }).FirstOrDefault();
+
+                    if (validatorType != null)
                     {
-                        throw new Exception($"{validatorType.Name}: {result.FailureMessage}");
+                        var validator = Activator.CreateInstance(validatorType);
+                        var m = validatorType.GetMethod("Validate");
+                        var result = (Microsoft.Extensions.Options.ValidateOptionsResult?)m?.Invoke(validator, new object[] { "", instance });
+                        if (result!.Failed)
+                        {
+                            throw new Exception($"{validatorType.Name}: {result.FailureMessage}");
+                        }
                     }
                 }
             }
+
+            return appSettings;
             // https://kaylumah.nl/2021/11/29/validated-strongly-typed-ioptions.html
             // If we want to inject IOptions<Type> instead of just Type, this is needed: https://stackoverflow.com/a/61157181 services.ConfigureOptions(instance)
             //services.Configure<AceKnowledgeOptions>(config.GetSection("AceKnowledge"));

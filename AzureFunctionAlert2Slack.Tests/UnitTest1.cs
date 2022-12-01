@@ -28,7 +28,7 @@ namespace AzureFunctionAlert2Slack.Tests
 
             services.AddSingleton<IConfiguration>(config);
 
-            Startup.ConfigureServices(services, config);
+            Startup.ConfigureServices(services, config, "test");
 
             var sp = services.BuildServiceProvider();
 

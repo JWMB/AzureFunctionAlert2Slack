@@ -7,6 +7,8 @@ using AzureMonitorAlertToSlack.Services.LogQuery;
 using Microsoft.Extensions.Configuration;
 using System;
 using AzureMonitorAlertToSlack;
+using System.Collections.Generic;
+using System.Linq;
 
 [assembly: FunctionsStartup(typeof(AzureFunctionAlert2Slack.Startup))]
 namespace AzureFunctionAlert2Slack
@@ -15,22 +17,36 @@ namespace AzureFunctionAlert2Slack
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            ConfigureServices(builder.Services, builder.GetContext().Configuration);
+            var context = builder.GetContext();
+            ConfigureServices(builder.Services, context.Configuration, context.EnvironmentName, context.ApplicationRootPath);
         }
 
-        public static void ConfigureServices(IServiceCollection services, IConfiguration config)
+        public static void ConfigureServices(IServiceCollection services, IConfiguration config, string environmentName, string? applicationRootPath = null)
         {
             services.AddHttpClient<SlackClient>(c => SlackClient.Configure(c));
             services.AddSingleton<ISlackClient, SlackClient>();
 
-            TypedConfiguration.ConfigureTypedConfiguration<AppSettings>(services, config, "AppSettings");
-            if (config.GetValue("UseLogQueryService", "") == "1")
+            if (environmentName == "Development")
+            {
+                // Hmm, debug runtime path is C:\Users\xxxxx\AppData\Local\AzureFunctionsTools\Releases\4.29.0\cli_x64\appsettings.development.json
+                var filepath = System.IO.Path.Join(applicationRootPath, $"appsettings.{environmentName.ToLower()}.json");
+                if (System.IO.File.Exists(filepath))
+                {
+                    config = new ConfigurationBuilder()
+                        .AddJsonFile(filepath)
+                        .AddConfiguration(config)
+                        .Build();
+                }
+            }
+
+            var appSettings = TypedConfiguration.ConfigureTypedConfiguration<AppSettings>(services, config, "AppSettings");
+            if (appSettings.LogQuery?.Enabled == true)
             {
                 services.AddHttpClient<AppInsightsQueryService.ApplicationInsightsClient>(
-                    (sp, c) => AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(c, GetConfigValue(sp, "ApplicationInsightsAppId"), GetConfigValue(sp, "ApplicationInsightsApiKey")));
+                    (sp, c) => AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(c, sp.GetRequiredService<ApplicationInsightsQuerySettings>()));
 
                 services.AddSingleton<IAppInsightsQueryService, AppInsightsQueryService>();
-                services.AddSingleton<ILogAnalyticsQueryService>(sp => new LogAnalyticsQueryService(GetConfigValue(sp, "workspaceId")));
+                services.AddSingleton<ILogAnalyticsQueryService>(sp => new LogAnalyticsQueryService(sp.GetRequiredService<LogAnalyticsQuerySettings>()));
 
                 services.AddSingleton<ILogQueryServiceFactory, LogQueryServiceFactory>();
             }
@@ -44,14 +60,6 @@ namespace AzureFunctionAlert2Slack
             services.AddSingleton<RequestToSlackFunction>();
 
             services.AddLogging();
-
-            string GetConfigValue(IServiceProvider sp, string name, string? defaultValue = null)
-            {
-                var val = sp.GetRequiredService<IConfiguration>().GetValue(name, defaultValue);
-                if (val == null)
-                    throw new ArgumentNullException(name);
-                return val;
-            }
         }
     }
 }
