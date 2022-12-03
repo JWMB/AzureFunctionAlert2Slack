@@ -16,12 +16,6 @@ namespace AzureFunctionAlert2Slack
     {
     }
 
-    internal class MyMessageSender : SlackMessageSender<SummarizedAlert, SummarizedAlertPart>
-    {
-        public MyMessageSender(ISlackClient sender, ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart> messageFactory) : base(sender, messageFactory)
-        { }
-    }
-
     internal class MySummarizedAlertFactory : SummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>
     {
         public MySummarizedAlertFactory(IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart> demuxedHandler)

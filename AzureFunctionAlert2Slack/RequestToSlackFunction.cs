@@ -1,5 +1,6 @@
 ﻿using AzureMonitorAlertToSlack;
 using AzureMonitorAlertToSlack.Alerts;
+using AzureMonitorAlertToSlack.Slack;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -14,15 +15,18 @@ namespace AzureFunctionAlert2Slack
     public class RequestToSlackFunction
     {
         private readonly ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory;
-        private readonly IMessageSender<SummarizedAlert, SummarizedAlertPart> sender;
+        private readonly ISlackClient slackClient;
+        private readonly ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart> messageFactory;
+
         private readonly ILogger<RequestToSlackFunction> log;
 
         public RequestToSlackFunction(ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory,
-            IMessageSender<SummarizedAlert, SummarizedAlertPart> sender,
+            ISlackClient slackClient, ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart> messageFactory,
             ILogger<RequestToSlackFunction> log)
         {
             this.alertInfoFactory = alertInfoFactory;
-            this.sender = sender;
+            this.slackClient = slackClient;
+            this.messageFactory = messageFactory;
             this.log = log;
         }
 
@@ -66,7 +70,7 @@ namespace AzureFunctionAlert2Slack
 
             try
             {
-                await sender.SendMessage(summary);
+                await SendMessage(summary);
             }
             catch (Exception ex)
             {
@@ -79,7 +83,7 @@ namespace AzureFunctionAlert2Slack
                     // Maybe we should provide a HTML document instead and render it to mrkdwn
                     try
                     {
-                        await sender.SendMessage(new SummarizedAlert { Parts = new List<SummarizedAlertPart> { new SummarizedAlertPart { Title = "Slack error response", Text = ex.Message } } });
+                        await SendMessage(new SummarizedAlert { Parts = new List<SummarizedAlertPart> { new SummarizedAlertPart { Title = "Slack error response", Text = ex.Message } } });
                     }
                     catch { }
                 }
@@ -90,6 +94,14 @@ namespace AzureFunctionAlert2Slack
             return parseException != null
                 ? new BadRequestObjectResult($"Could not read body: {parseException.Message}")
                 : new OkObjectResult("");
+        }
+
+        private async Task SendMessage(SummarizedAlert summary)
+        {
+            var slackBody = messageFactory.CreateMessage(summary);
+            string? webhook = null;
+            summary.CustomProperties?.TryGetValue("slackWebhook", out webhook);
+            await slackClient.Send(slackBody, webhook);
         }
     }
 }

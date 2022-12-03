@@ -51,7 +51,6 @@ namespace AzureFunctionAlert2Slack
             services.AddSingleton<ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>, MySummarizedAlertFactory>();
 
             services.AddSingleton<ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart>, MySlackMessageFactory>();
-            services.AddSingleton<IMessageSender<SummarizedAlert, SummarizedAlertPart>, MyMessageSender>();
 
             services.AddSingleton<RequestToSlackFunction>();
 
