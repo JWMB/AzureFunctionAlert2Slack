@@ -37,11 +37,11 @@ namespace AzureFunctionAlert2Slack
             if (string.IsNullOrEmpty(requestBody))
                 return new BadRequestObjectResult($"Body was {(requestBody == null ? "null" : "empty")}");
 
-            SummarizedAlert items;
+            SummarizedAlert summary;
             Exception? parseException = null;
             try
             {
-                items = await alertInfoFactory.Process(requestBody);
+                summary = await alertInfoFactory.Process(requestBody);
             }
             catch (Exception ex)
             {
@@ -49,24 +49,24 @@ namespace AzureFunctionAlert2Slack
 
                 // Don't throw immediately - let this error message be sent first
                 parseException = ex;
-                items = new SummarizedAlert
+                summary = new SummarizedAlert
                 {
                     Parts = new List<SummarizedAlertPart>
                     {
-                    new SummarizedAlertPart{ Title = "Unknown alert", Text = ex.Message },
-                    new SummarizedAlertPart{ Title = "Body", Text = requestBody }
+                        new SummarizedAlertPart{ Title = "Unknown alert", Text = ex.Message },
+                        new SummarizedAlertPart{ Title = "Body", Text = requestBody }
                     }
                 };
             }
 
             if (Environment.GetEnvironmentVariable("DebugPayload") == "1") // TODO: change when DI problem solved
             {
-                items.Parts.Last().Text += $"\\n{requestBody}";
+                summary.Parts.Last().Text += $"\\n{requestBody}";
             }
 
             try
             {
-                await sender.SendMessage(items);
+                await sender.SendMessage(summary);
             }
             catch (Exception ex)
             {

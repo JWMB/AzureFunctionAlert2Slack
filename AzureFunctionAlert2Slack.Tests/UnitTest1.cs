@@ -49,10 +49,12 @@ namespace AzureFunctionAlert2Slack.Tests
 
             var sp = services.BuildServiceProvider();
 
-            ShouldOrShouldNotThrow(useLogQueryService == false, () => sp.GetRequiredService<ILogAnalyticsQueryService>());
+            ShouldOrShouldNotThrow(shouldThrow: useLogQueryService == false, () => sp.GetRequiredService<ILogAnalyticsQueryService>());
 
             Should.NotThrow(sp.GetRequiredService<ApplicationInsightsQuerySettings>);
             Should.NotThrow(sp.GetRequiredService<LogAnalyticsQuerySettings>);
+
+            Should.NotThrow(sp.GetRequiredService<ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart>>);
             Should.NotThrow(sp.GetRequiredService<IMessageSender<SummarizedAlert, SummarizedAlertPart>>);
             Should.NotThrow(sp.GetRequiredService<ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>>);
 
