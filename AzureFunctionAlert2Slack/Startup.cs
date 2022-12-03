@@ -5,6 +5,7 @@ using AzureMonitorAlertToSlack;
 using AzureMonitorAlertToSlack.Slack;
 using AzureMonitorAlertToSlack.LogQuery;
 using AzureMonitorAlertToSlack.Alerts;
+using System;
 
 [assembly: FunctionsStartup(typeof(AzureFunctionAlert2Slack.Startup))]
 namespace AzureFunctionAlert2Slack
@@ -47,7 +48,8 @@ namespace AzureFunctionAlert2Slack
                 services.AddSingleton<ILogQueryServiceFactory, LogQueryServiceFactory>();
             }
 
-            services.AddSingleton<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>, DemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>();
+            //services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>, Func<DemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>();
+            services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>(() => new DemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>());
             services.AddSingleton<ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>, MySummarizedAlertFactory>();
 
             services.AddSingleton<ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart>, MySlackMessageFactory>();

@@ -5,6 +5,8 @@
 local.settings.json
 
 PublishProfiles/
+PublishProfiles/
+*/Properties/serviceDependencies*
 
 # User-specific files
 *.suo

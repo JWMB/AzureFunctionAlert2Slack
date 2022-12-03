@@ -2,6 +2,7 @@
 using AzureMonitorAlertToSlack.Alerts;
 using AzureMonitorAlertToSlack.LogQuery;
 using AzureMonitorAlertToSlack.Slack;
+using System;
 
 namespace AzureFunctionAlert2Slack
 {
@@ -18,7 +19,7 @@ namespace AzureFunctionAlert2Slack
 
     internal class MySummarizedAlertFactory : SummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>
     {
-        public MySummarizedAlertFactory(IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart> demuxedHandler)
+        public MySummarizedAlertFactory(Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>> demuxedHandler)
             : base(demuxedHandler)
         { }
     }
