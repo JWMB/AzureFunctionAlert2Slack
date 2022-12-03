@@ -18,20 +18,20 @@ namespace AzureFunctionAlert2Slack.Tests
     public class RequestToSlackFunctionTests
     {
         private IFixture fixture;
-        private IMessageSender messageSender;
-        private IAlertInfoFactory alertInfoFactory;
+        private IMessageSenderTyped messageSender;
+        private ISummarizedAlertFactoryTyped alertInfoFactory;
 
         public RequestToSlackFunctionTests()
         {
             fixture = new Fixture().Customize(new AutoMoqCustomization());
 
             //var alertInfoFactory = fixture.Build<IAlertInfoFactory>().With(o => o.Process(It.IsAny<string>()), Task.FromResult(new List<AlertInfo> { })).Create();
-            var mAlertInfoFactory = new Mock<IAlertInfoFactory>();
-            mAlertInfoFactory.Setup(o => o.Process(It.IsAny<string>())).Returns(Task.FromResult(new List<AlertInfo> { }));
+            var mAlertInfoFactory = new Mock<ISummarizedAlertFactoryTyped>();
+            mAlertInfoFactory.Setup(o => o.Process(It.IsAny<string>())).Returns(Task.FromResult(new SummarizedAlert()));
             alertInfoFactory = mAlertInfoFactory.Object;
 
-            var mMessageSender = new Mock<IMessageSender>();
-            mMessageSender.Setup(o => o.SendMessage(It.IsAny<List<AlertInfo>>())).Returns(Task.CompletedTask);
+            var mMessageSender = new Mock<IMessageSenderTyped>();
+            mMessageSender.Setup(o => o.SendMessage(It.IsAny<SummarizedAlert>())).Returns(Task.CompletedTask);
             messageSender = mMessageSender.Object;
         }
 
@@ -46,7 +46,7 @@ namespace AzureFunctionAlert2Slack.Tests
             result.ShouldBeAssignableTo<OkObjectResult>();
 
             Mock.Get(alertInfoFactory).Verify(o => o.Process(It.IsAny<string>()), Times.Once);
-            Mock.Get(messageSender).Verify(o => o.SendMessage(It.IsAny<List<AlertInfo>>()), Times.Once);
+            Mock.Get(messageSender).Verify(o => o.SendMessage(It.IsAny<SummarizedAlert>()), Times.Once);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace AzureFunctionAlert2Slack.Tests
             result.ShouldBeAssignableTo<BadRequestObjectResult>();
 
             Mock.Get(alertInfoFactory).Verify(o => o.Process(It.IsAny<string>()), Times.Never);
-            Mock.Get(messageSender).Verify(o => o.SendMessage(It.IsAny<List<AlertInfo>>()), Times.Never);
+            Mock.Get(messageSender).Verify(o => o.SendMessage(It.IsAny<SummarizedAlert>()), Times.Never);
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace AzureFunctionAlert2Slack.Tests
 
             Mock.Get(alertInfoFactory).Verify(o => o.Process(It.IsAny<string>()), Times.Once);
             //Mock.Get(messageSender).Verify(o => o.SendMessage(It.IsAny<List<AlertInfo>>()), Times.Once);
-            Mock.Get(messageSender).Verify(o => o.SendMessage(It.Is<List<AlertInfo>>(x => x.Count == 2)), Times.Once);
+            Mock.Get(messageSender).Verify(o => o.SendMessage(It.Is<SummarizedAlert>(x => x.Parts.Count == 2)), Times.Once);
         }
 
         private async Task<HttpRequest> CreateRequest(Uri? uri = null, string? content = null)

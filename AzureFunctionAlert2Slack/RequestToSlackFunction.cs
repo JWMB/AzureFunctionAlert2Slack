@@ -13,11 +13,13 @@ namespace AzureFunctionAlert2Slack
 {
     public class RequestToSlackFunction
     {
-        private readonly IAlertInfoFactory alertInfoFactory;
-        private readonly IMessageSender sender;
+        private readonly ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory;
+        private readonly IMessageSender<SummarizedAlert, SummarizedAlertPart> sender;
         private readonly ILogger<RequestToSlackFunction> log;
 
-        public RequestToSlackFunction(IAlertInfoFactory alertInfoFactory, IMessageSender sender, ILogger<RequestToSlackFunction> log)
+        public RequestToSlackFunction(ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory,
+            IMessageSender<SummarizedAlert, SummarizedAlertPart> sender,
+            ILogger<RequestToSlackFunction> log)
         {
             this.alertInfoFactory = alertInfoFactory;
             this.sender = sender;
@@ -35,7 +37,7 @@ namespace AzureFunctionAlert2Slack
             if (string.IsNullOrEmpty(requestBody))
                 return new BadRequestObjectResult($"Body was {(requestBody == null ? "null" : "empty")}");
 
-            List<AlertInfo> items;
+            SummarizedAlert items;
             Exception? parseException = null;
             try
             {
@@ -47,15 +49,19 @@ namespace AzureFunctionAlert2Slack
 
                 // Don't throw immediately - let this error message be sent first
                 parseException = ex;
-                items = new List<AlertInfo>{
-                    new AlertInfo{ Title = "Unknown alert", Text = ex.Message },
-                    new AlertInfo{ Title = "Body", Text = requestBody }
+                items = new SummarizedAlert
+                {
+                    Parts = new List<SummarizedAlertPart>
+                    {
+                    new SummarizedAlertPart{ Title = "Unknown alert", Text = ex.Message },
+                    new SummarizedAlertPart{ Title = "Body", Text = requestBody }
+                    }
                 };
             }
 
             if (Environment.GetEnvironmentVariable("DebugPayload") == "1") // TODO: change when DI problem solved
             {
-                items.Last().Text += $"\\n{requestBody}";
+                items.Parts.Last().Text += $"\\n{requestBody}";
             }
 
             try
@@ -73,7 +79,7 @@ namespace AzureFunctionAlert2Slack
                     // Maybe we should provide a HTML document instead and render it to mrkdwn
                     try
                     {
-                        await sender.SendMessage(new[] { new AlertInfo { Title = "Slack error response", Text = ex.Message } });
+                        await sender.SendMessage(new SummarizedAlert { Parts = new List<SummarizedAlertPart> { new SummarizedAlertPart { Title = "Slack error response", Text = ex.Message } } });
                     }
                     catch { }
                 }

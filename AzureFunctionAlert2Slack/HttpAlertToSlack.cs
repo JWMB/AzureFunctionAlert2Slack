@@ -34,8 +34,11 @@ namespace AzureFunctionAlert2Slack
 
                 var logger = new LoggerWrapper<RequestToSlackFunction>(log);
                 function = new RequestToSlackFunction(
-                    new AlertInfoFactory(new DemuxedAlertInfoHandler(logQueryServiceFactory)),
-                    new SlackMessageSender(new SlackClient(SlackClient.Configure(HttpClientFactory.Create()), new SlackSettings { DefaultWebhook = Environment.GetEnvironmentVariable("slackWebhook") ?? "" }), new SlackMessageFactory()), logger);
+                    new MySummarizedAlertFactory(new MyDemuxedAlertHandler(logQueryServiceFactory)),
+                    new MyMessageSender(
+                        new SlackClient(SlackClient.Configure(HttpClientFactory.Create()), 
+                        new SlackSettings { DefaultWebhook = Environment.GetEnvironmentVariable("slackWebhook") ?? "" }), new MySlackMessageFactory()),
+                    logger);
             }
 
             return await function.Run(req);
