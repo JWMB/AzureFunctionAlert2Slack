@@ -17,16 +17,18 @@ namespace AzureFunctionAlert2Slack
         private readonly ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory;
         private readonly ISlackClient slackClient;
         private readonly ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart> messageFactory;
-
+        private readonly DebugSettings debugSettings;
         private readonly ILogger<RequestToSlackFunction> log;
 
         public RequestToSlackFunction(ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart> alertInfoFactory,
             ISlackClient slackClient, ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart> messageFactory,
+            DebugSettings debugSettings,
             ILogger<RequestToSlackFunction> log)
         {
             this.alertInfoFactory = alertInfoFactory;
             this.slackClient = slackClient;
             this.messageFactory = messageFactory;
+            this.debugSettings = debugSettings;
             this.log = log;
         }
 
@@ -63,7 +65,12 @@ namespace AzureFunctionAlert2Slack
                 };
             }
 
-            if (Environment.GetEnvironmentVariable("DebugPayload") == "1") // TODO: change when DI problem solved
+            if (summary.Parts.Any() == false)
+            {
+                summary.Parts.Add(new SummarizedAlertPart { Text = "No parts created" });
+            }
+
+            if (debugSettings.AddPayloadToMessage)
             {
                 summary.Parts.Last().Text += $"\\n{requestBody}";
             }

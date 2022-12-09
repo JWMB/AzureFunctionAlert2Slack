@@ -36,7 +36,7 @@ namespace AzureFunctionAlert2Slack
                 }
             }
 
-            var appSettings = TypedConfiguration.ConfigureTypedConfiguration<AppSettings>(services, config, "AppSettings");
+            var appSettings = TypedConfiguration.ConfigureTypedConfiguration<MyAppSettings>(services, config, "AppSettings");
             if (appSettings.LogQuery?.Enabled == true)
             {
                 services.AddHttpClient<AppInsightsQueryService.ApplicationInsightsClient>(

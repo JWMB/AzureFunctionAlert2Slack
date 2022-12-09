@@ -11,6 +11,8 @@ using AzureMonitorCommonAlertSchemaTypes.AlertContexts.LogAlertsV2;
 using AutoFixture;
 using Moq;
 using AutoFixture.AutoMoq;
+using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
@@ -126,6 +128,28 @@ namespace AzureFunctionAlert2Slack.Tests
             var expectedQuery = $"{criteria.Single().SearchQuery}\n{alert.Data.CustomProperties["querySuffix"]}";
             Mock.Get(qService).Verify(o => o.GetQueryAsDataTable(It.Is<string>(o => o == expectedQuery), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken?>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public void StartupFallback_CreateFunction()
+        {
+            var fixture = new Fixture().Customize(new AutoMoqCustomization()); ;
+
+            var envVars = ConfigurationHelpers.ObjectToFlatDictionary(fixture.Create<MyAppSettings>()).ToDictionary(o => o.key, o => o.value);
+            StartupFallback.CreateFunction(envVars, fixture.Create<ILogger>());
+        }
+
+        [Fact]
+        public void StartupFallback_FlatDictionaryToJson()
+        {
+            var fixture = new Fixture().Customize(new AutoMoqCustomization()); ;
+            var appSettings = fixture.Create<AppSettings>();
+            
+            var flatDict = ConfigurationHelpers.ObjectToFlatDictionary(appSettings, "AppSettings").ToDictionary(o => o.key, o => o.value);
+            var json = StartupFallback.FlatDictionaryToJson(flatDict);
+
+            var recreated = JsonConvert.DeserializeObject<AppSettings>(json.ToString());
+            recreated.ShouldBeEquivalentTo(appSettings);
         }
     }
 }

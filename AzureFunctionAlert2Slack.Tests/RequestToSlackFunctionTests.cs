@@ -7,6 +7,7 @@ using AutoFixture.AutoMoq;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
+using AzureMonitorAlertToSlack;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
@@ -36,7 +37,7 @@ namespace AzureFunctionAlert2Slack.Tests
             mMessageFactory.Setup(o => o.CreateMessage(It.IsAny<SummarizedAlert>())).Returns(new SlackNet.WebApi.Message());
             messageFactory = mMessageFactory.Object;
 
-            function = new RequestToSlackFunction(summaryFactory, slackClient, messageFactory, fixture.Create<ILogger<RequestToSlackFunction>>());
+            function = new RequestToSlackFunction(summaryFactory, slackClient, messageFactory, fixture.Create<DebugSettings>(), fixture.Create<ILogger<RequestToSlackFunction>>());
         }
 
         [Fact]
