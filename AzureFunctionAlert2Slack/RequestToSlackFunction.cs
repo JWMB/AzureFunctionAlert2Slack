@@ -51,7 +51,7 @@ namespace AzureFunctionAlert2Slack
             }
             catch (Exception ex)
             {
-                log.LogError(ex.Message);
+                log.LogError(ex, ex.Message);
 
                 // Don't throw immediately - let this error message be sent first
                 parseException = ex;
@@ -59,7 +59,7 @@ namespace AzureFunctionAlert2Slack
                 {
                     Parts = new List<SummarizedAlertPart>
                     {
-                        new SummarizedAlertPart{ Title = "Unknown alert", Text = ex.Message },
+                        new SummarizedAlertPart{ Title = "Unknown alert", Text = ex.ToStringRecursive(3000) },
                         new SummarizedAlertPart{ Title = "Body", Text = requestBody }
                     }
                 };
