@@ -48,9 +48,10 @@ namespace AzureFunctionAlert2Slack
                 services.AddSingleton<ILogQueryServiceFactory, LogQueryServiceFactory>();
             }
 
+            // Registering implementation type Func<MyDemuxedAlertHandler> is not assignable to service type Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>
             //services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>, Func<DemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>();
-            services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>(() => new DemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>());
-            services.AddSingleton<ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>, MySummarizedAlertFactory>();
+            //services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>, Func<MyDemuxedAlertHandler>>();
+            services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>(sp => () => new MyDemuxedAlertHandler(sp.GetService<ILogQueryServiceFactory>()));
 
             services.AddSingleton<ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart>, MySlackMessageFactory>();
 
