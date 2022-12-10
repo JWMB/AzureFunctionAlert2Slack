@@ -53,6 +53,8 @@ namespace AzureFunctionAlert2Slack
             //services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>, Func<MyDemuxedAlertHandler>>();
             services.AddSingleton<Func<IDemuxedAlertHandler<SummarizedAlert, SummarizedAlertPart>>>(sp => () => new MyDemuxedAlertHandler(sp.GetService<ILogQueryServiceFactory>()));
 
+            services.AddSingleton<ISummarizedAlertFactory<SummarizedAlert, SummarizedAlertPart>, MySummarizedAlertFactory>();
+
             services.AddSingleton<ISlackMessageFactory<SummarizedAlert, SummarizedAlertPart>, MySlackMessageFactory>();
 
             services.AddSingleton<RequestToSlackFunction>();
