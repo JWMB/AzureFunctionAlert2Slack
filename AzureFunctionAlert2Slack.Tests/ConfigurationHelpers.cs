@@ -11,7 +11,8 @@
                 var fullPath = $"{(path.Any() ? $"{path}:" : "")}{prop.Name}";
                 var val = prop.GetValue(obj);
                 if (val == null)
-                    ; // yield return (fullPath, "");
+                    continue;
+
                 else if (val.GetType().IsClass && val is not string)
                     foreach (var item in ObjectToFlatDictionary(val, fullPath))
                         yield return item;

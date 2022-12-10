@@ -4,7 +4,9 @@ using AzureMonitorCommonAlertSchemaTypes;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts.LogAlertsV2;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AzureFunctionAlert2Slack
@@ -15,26 +17,37 @@ namespace AzureFunctionAlert2Slack
             : base(logQueryServiceFactory)
         { }
 
-        protected override void SetHandled(SummarizedAlert item)
+        private Alert? currentlyProcessedAlert;
+
+        protected override void CreateResult(Alert alert, string? createPartWithText)
         {
-            item.Title = $"{GetCustomProperty(item, "titlePrefix")}{item.Title}{GetCustomProperty(item, "titleSuffix")}";
-            base.SetHandled(item);
+            currentlyProcessedAlert = alert;
+            base.CreateResult(alert, createPartWithText);
         }
 
-        protected override SummarizedAlert CreateBasic(Alert alert, string? createPartWithText)
+        protected override void PostProcess()
         {
-            var item = base.CreateBasic(alert, createPartWithText);
-
-            // TODO: we should add an overridable CreatePart method
-            foreach (var part in item.Parts)
-                SetColor(part, alert);
-
-            return item;
+            if (Result != null)
+                // TODO: CustomProperties are not what I thought
+                Result.Title = $"{GetCustomProperty(Result, "titlePrefix")}{Result.Title}{GetCustomProperty(Result, "titleSuffix")}";
         }
 
-        public override void LogAlertsV2AlertContext(Alert alert, LogAlertsV2AlertContext ctx, DynamicThresholdCriteria[] criteria)
+        protected override SummarizedAlertPart CreatePart()
         {
-            base.LogAlertsV2AlertContext(alert, ctx, criteria);
+            var part = base.CreatePart();
+            if (currentlyProcessedAlert != null)
+                SetColor(part, currentlyProcessedAlert);
+            return part;
+        }
+
+        public override void LogAlertsV2AlertContext(Alert alert, LogAlertsV2AlertContext ctx)
+        {
+            base.LogAlertsV2AlertContext(alert, ctx);
+
+            // Copy ctx.Properties to Result (sure, we override the CustomProperties, but can't see how those are populated anyway..?)
+            Result.CustomProperties ??= new Dictionary<string, string>();
+            foreach (var kv in ctx.Properties)
+                Result.CustomProperties.Add(kv.Key, kv.Value);
         }
 
         protected override SummarizedAlertPart CreatePartFromV2ConditionPart(Alert alert, LogAlertsV2AlertContext ctx, IConditionPart? conditionPart)
@@ -42,22 +55,16 @@ namespace AzureFunctionAlert2Slack
             SummarizedAlertPart part;
             if (conditionPart is LogQueryCriteria lq)
             {
-                part = new SummarizedAlertPart();
-                part.Text = $"{lq.MetricValue}{lq.MetricValue}{lq.OperatorToken}{lq.Threshold}\nQuery:{lq.SearchQuery.Truncate(100)}";
+                part = CreatePart();
+                part.Text = $"{lq.MetricMeasureColumn}: {lq.MetricValue} {lq.OperatorToken} {lq.Threshold} ({ctx.Condition.GetUserFriendlyTimeWindowString()})\nQuery:{lq.SearchQuery.Truncate(100)}";
+                if (ctx.Properties.TryGetValue("querySuffix", out var querySuffix))
+                    // TODO: ugly to modify the actual property...
+                    lq.SearchQuery = $"{lq.SearchQuery.Trim()}{(string.IsNullOrEmpty(querySuffix) ? "" : $"\n{querySuffix}")}";
             }
             else
                 part = base.CreatePartFromV2ConditionPart (alert, ctx, conditionPart);
 
-            SetColor(part, alert);
-
             return part;
-        }
-
-        protected override Task<string?> QueryAI(SummarizedAlert handled, string targetResourceTypes, string? query, DateTimeOffset start, DateTimeOffset end)
-        {
-            var querySuffix = GetCustomProperty(handled, "querySuffix");
-            query = $"{query}{(string.IsNullOrEmpty(querySuffix) ? "" : $"\n{querySuffix}")}";
-            return base.QueryAI(handled, targetResourceTypes, query, start, end);
         }
 
         private string GetCustomProperty(SummarizedAlert item, string key, string defaultValue = "") =>
@@ -68,21 +75,25 @@ namespace AzureFunctionAlert2Slack
             var severity = alert.Data.Essentials.Severity?.ToLower();
             switch (severity)
             {
+                case "sev0":
+                case "critical":
+                    part.Color = "#e71123";
+                    break;
                 case "sev1":
-                case "information":
-                    part.Color = "#0872c4";
+                case "error":
+                    part.Color = "#dc5805";
                     break;
                 case "sev2":
                 case "warning":
                     part.Color = "#fbd023";
                     break;
                 case "sev3":
-                case "error":
-                    part.Color = "#dc5805";
+                case "information":
+                    part.Color = "#0872c4";
                     break;
                 case "sev4":
-                case "critical":
-                    part.Color = "#e71123";
+                case "verbose":
+                    part.Color = "#05198d";
                     break;
             }
         }

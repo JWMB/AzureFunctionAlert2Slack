@@ -9,6 +9,7 @@ namespace AzureFunctionAlert2Slack
 
     public class DebugSettings
     {
-        public bool AddPayloadToMessage { get; set; }
+        public bool AddPayload { get; set; }
+        public bool AddCustomProperties { get; set; }
     }
 }

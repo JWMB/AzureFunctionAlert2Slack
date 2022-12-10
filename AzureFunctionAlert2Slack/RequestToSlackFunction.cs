@@ -1,9 +1,10 @@
-﻿using AzureMonitorAlertToSlack;
-using AzureMonitorAlertToSlack.Alerts;
+﻿using AzureMonitorAlertToSlack.Alerts;
 using AzureMonitorAlertToSlack.Slack;
+using AzureMonitorCommonAlertSchemaTypes.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -66,13 +67,16 @@ namespace AzureFunctionAlert2Slack
             }
 
             if (summary.Parts.Any() == false)
-            {
                 summary.Parts.Add(new SummarizedAlertPart { Text = "No parts created" });
-            }
 
-            if (debugSettings.AddPayloadToMessage)
+            if (debugSettings.AddPayload)
+                summary.Parts.Add(new SummarizedAlertPart { Title = "RequestBody", Text = $"{requestBody}" });
+            if (debugSettings.AddCustomProperties)
             {
-                summary.Parts.Last().Text += $"\\n{requestBody}";
+                summary.Parts.Add(new SummarizedAlertPart {
+                    Title = "Custom properties",
+                    Text = $"{(summary.CustomProperties == null ? "N/A" : JsonConvert.SerializeObject(summary.CustomProperties))}"
+                });
             }
 
             try

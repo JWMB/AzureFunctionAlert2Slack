@@ -14,7 +14,8 @@ namespace AzureFunctionAlert2Slack
         public static RequestToSlackFunction CreateFunction(IDictionary envVariables, ILogger log)
         {
             var settings = FlatDictionaryToJson(envVariables).ToObject<MyAppSettings>();
-
+            if (settings == null)
+                throw new Exception("Could not create settings (CreateFunction)");
             //var recreated = JsonConvert.DeserializeObject<AppSettings>();
 
             //var settings = new MyAppSettings();
@@ -100,22 +101,11 @@ namespace AzureFunctionAlert2Slack
 
         private static ILogQueryServiceFactory CreateLogQueryServiceFactory(LogQuerySettings logQuerySettings)
         {
-            //var logQuerySettings = new LogQuerySettings
-            //{
-            //    ApplicationInsights = new ApplicationInsightsQuerySettings
-            //    {
-            //        AppId = GetSetting("ApplicationInsightsAppId"),
-            //        ApiKey = GetSetting("ApplicationInsightsApiKey")
-            //    },
-            //    Enabled = true,
-            //    Timeout = 20,
-            //    LogAnalytics = new LogAnalyticsQuerySettings
-            //    {
-            //        WorkspaceId = GetSetting("workspaceId")
-            //    }
-            //};
-            var la = new LogAnalyticsQueryService(logQuerySettings.LogAnalytics);
-            var ai = new AppInsightsQueryService(
+            var la = logQuerySettings.LogAnalytics == null ? null 
+                : new LogAnalyticsQueryService(logQuerySettings.LogAnalytics);
+
+            var ai = logQuerySettings.ApplicationInsights == null ? null
+                : new AppInsightsQueryService(
                         new AppInsightsQueryService.ApplicationInsightsClient(
                             AppInsightsQueryService.ApplicationInsightsClient.ConfigureClient(HttpClientFactory.Create(), logQuerySettings.ApplicationInsights)));
 

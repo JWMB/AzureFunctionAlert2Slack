@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
-    public class UnitTest1
+    public class DependencyInjectionTests
     {
         [Theory]
         [InlineData(false)]
@@ -75,59 +75,6 @@ namespace AzureFunctionAlert2Slack.Tests
                 else
                     Should.NotThrow(action);
             }
-        }
-
-        [Fact]
-        public void MyDemuxedAlertHandler_TitleAffices()
-        {
-            var alertHandler = new MyDemuxedAlertHandler(null);
-
-            var alert = new Alert();
-            var ctx = new LogAlertsV2AlertContext();
-            ctx.Condition.AllOf = Array.Empty<IConditionPart>();
-            alert.Data.AlertContext = ctx;
-
-            alert.Data.CustomProperties = new Dictionary<string, string>
-            {
-                { "titlePrefix", "Prefix: "},
-                { "titleSuffix", " - suffix"}
-            };
-
-            alertHandler.LogAlertsV2AlertContext(alert, ctx);
-
-            alertHandler.Handled.Title.ShouldBe($"{alert.Data.CustomProperties["titlePrefix"]}{alert.Data.CustomProperties["titleSuffix"]}");
-        }
-
-        [Fact]
-        public void MyDemuxedAlertHandler_QuerySuffix()
-        {
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            var qService = fixture.Create<ILogQueryService>();
-
-            //var qFactory = fixture.Build<ILogQueryServiceFactory>()
-            //    .With(o => o.CreateLogQueryService(It.IsAny<string>()), () => qService)
-            //    .Create();
-            var mQFactory = new Mock<ILogQueryServiceFactory>();
-            mQFactory.Setup(o => o.CreateLogQueryService(It.IsAny<string>())).Returns(qService);
-
-            var alertHandler = new MyDemuxedAlertHandler(mQFactory.Object);
-
-            var alert = new Alert();
-            var ctx = new LogAlertsV2AlertContext();
-            var criteria = new LogQueryCriteria[] { new LogQueryCriteria { SearchQuery = "AppTraces" } };
-            ctx.Condition.AllOf = criteria;
-            alert.Data.AlertContext = ctx;
-
-            alert.Data.CustomProperties = new Dictionary<string, string>
-            {
-                { "querySuffix", "| project Timestamp"},
-            };
-
-            alertHandler.LogAlertsV2AlertContext(alert, ctx, criteria);
-
-            var expectedQuery = $"{criteria.Single().SearchQuery}\n{alert.Data.CustomProperties["querySuffix"]}";
-            Mock.Get(qService).Verify(o => o.GetQueryAsDataTable(It.Is<string>(o => o == expectedQuery), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken?>()),
-                Times.Once);
         }
 
         [Fact]
