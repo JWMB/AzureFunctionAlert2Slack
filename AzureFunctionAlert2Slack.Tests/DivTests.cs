@@ -71,7 +71,7 @@ namespace AzureFunctionAlert2Slack.Tests
         [Theory]
         [InlineData("Sev3", "#0872c4")]
         [InlineData("Sev2", "#fbd023")]
-        public void MyDemuxedAlertHandler_AlertColor(string severity, string expectedColor)
+        public void MyDemuxedAlertHandler_AlertColorFromSeverity(string severity, string expectedColor)
         {
             var alertHandler = new MyDemuxedAlertHandler(null);
 
@@ -85,5 +85,25 @@ namespace AzureFunctionAlert2Slack.Tests
 
             alertHandler.Result.Parts.Select(o => o.Color).Distinct().Single().ShouldBe(expectedColor);
         }
+
+        [Fact]
+        public void MyDemuxedAlertHandler_AlertColorFromProperty()
+        {
+            var alertHandler = new MyDemuxedAlertHandler(null);
+
+            var alert = new Alert();
+            var ctx = new LogAlertsV2AlertContext();
+            ctx.Condition.AllOf = new LogQueryCriteria[] { };
+            var color = "#aabbcc";
+            ctx.Properties = new Dictionary<string, string> { { "color", color } };
+
+            alert.Data.AlertContext = ctx;
+            alert.Data.Essentials.Severity = "Sev3";
+
+            alertHandler.LogAlertsV2AlertContext(alert, ctx);
+
+            alertHandler.Result.Parts.Select(o => o.Color).Distinct().Single().ShouldBe(color);
+        }
+
     }
 }

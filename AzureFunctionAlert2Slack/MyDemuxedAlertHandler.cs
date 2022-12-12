@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AzureFunctionAlert2Slack
@@ -48,6 +49,12 @@ namespace AzureFunctionAlert2Slack
             Result.CustomProperties ??= new Dictionary<string, string>();
             foreach (var kv in ctx.Properties)
                 Result.CustomProperties.Add(kv.Key, kv.Value);
+
+            if (ctx.Properties.TryGetValue("color", out var color))
+            {
+                foreach (var item in Result.Parts)
+                    item.Color = color;
+            }
         }
 
         protected override SummarizedAlertPart CreatePartFromV2ConditionPart(Alert alert, LogAlertsV2AlertContext ctx, IConditionPart? conditionPart)
@@ -56,7 +63,16 @@ namespace AzureFunctionAlert2Slack
             if (conditionPart is LogQueryCriteria lq)
             {
                 part = CreatePart();
-                part.Text = $"{lq.MetricMeasureColumn}: {lq.MetricValue} {lq.OperatorToken} {lq.Threshold} ({ctx.Condition.GetUserFriendlyTimeWindowString()})\nQuery:{lq.SearchQuery.Truncate(100)}";
+                var metric = string.IsNullOrEmpty(lq.MetricMeasureColumn) ? lq.TimeAggregation : lq.MetricMeasureColumn;
+                part.Text = $"{metric}: {lq.MetricValue} {lq.OperatorToken} {lq.Threshold} ({ctx.Condition.GetUserFriendlyTimeWindowString()})\nQuery:{lq.SearchQuery.Replace("\n", "").Truncate(100)}";
+
+                if (ctx.Properties.TryGetValue("queryTransform", out var queryTransform))
+                {
+                    if (queryTransform == "uncomment lines")
+                    {
+                        lq.SearchQuery = Regex.Replace(lq.SearchQuery, @"(?<=\n)\/\/", "");
+                    }
+                }
                 if (ctx.Properties.TryGetValue("querySuffix", out var querySuffix))
                     // TODO: ugly to modify the actual property...
                     lq.SearchQuery = $"{lq.SearchQuery.Trim()}{(string.IsNullOrEmpty(querySuffix) ? "" : $"\n{querySuffix}")}";
