@@ -105,5 +105,29 @@ namespace AzureFunctionAlert2Slack.Tests
             alertHandler.Result.Parts.Select(o => o.Color).Distinct().Single().ShouldBe(color);
         }
 
+        [Fact]
+        public void MyDemuxedAlertHandler_AiQueryTransform()
+        {
+            var fixture = new Fixture().Customize(new AutoMoqCustomization());
+            var qService = fixture.Create<ILogQueryService>();
+
+            var mQFactory = new Mock<ILogQueryServiceFactory>();
+            mQFactory.Setup(o => o.CreateLogQueryService(It.IsAny<string>())).Returns(qService);
+
+            var alertHandler = new MyDemuxedAlertHandler(mQFactory.Object);
+
+            var alert = new Alert();
+            var ctx = new LogAlertsV2AlertContext();
+            ctx.Condition.AllOf = new LogQueryCriteria[] { new LogQueryCriteria { SearchQuery = @"
+traces
+//commented
+".Trim().Replace("\r", "") } };
+            ctx.Properties = new Dictionary<string, string> { { "queryTransform", "uncomment lines" } };
+            alert.Data.AlertContext = ctx;
+
+            alertHandler.LogAlertsV2AlertContext(alert, ctx, (LogQueryCriteria[])ctx.Condition.AllOf);
+
+            Mock.Get(qService).Verify(o => o.GetQueryAsDataTable("traces\ncommented", It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
     }
 }
