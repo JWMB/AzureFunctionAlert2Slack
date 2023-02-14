@@ -1,7 +1,6 @@
 ﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using AzureMonitorAlertToSlack;
 using AzureMonitorAlertToSlack.Slack;
 using AzureMonitorAlertToSlack.LogQuery;
 using AzureMonitorAlertToSlack.Alerts;

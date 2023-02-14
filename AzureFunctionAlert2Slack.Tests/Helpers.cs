@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
@@ -20,6 +22,15 @@ namespace AzureFunctionAlert2Slack.Tests
                 httpContext.Request.Body = stream;
             }
             return httpContext.Request;
+        }
+
+        public static async Task<HttpRequest> CreatePostJsonRequest(object body, Uri? uri = null)
+        {
+            return await CreateRequest(HttpMethod.Post,
+            uri ?? new Uri("https://localhost"),
+            new StringContent(
+                    JsonConvert.SerializeObject(body, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }),
+                    new System.Net.Http.Headers.MediaTypeHeaderValue("application/json")));
         }
     }
 }

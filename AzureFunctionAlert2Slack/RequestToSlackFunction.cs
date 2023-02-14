@@ -1,6 +1,5 @@
 ﻿using AzureMonitorAlertToSlack.Alerts;
 using AzureMonitorAlertToSlack.Slack;
-using AzureMonitorCommonAlertSchemaTypes.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

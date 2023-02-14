@@ -7,7 +7,6 @@ using AutoFixture.AutoMoq;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
-using AzureMonitorAlertToSlack;
 
 namespace AzureFunctionAlert2Slack.Tests
 {
