@@ -1,14 +1,11 @@
 ﻿using AzureMonitorAlertToSlack.Alerts;
 using AzureMonitorAlertToSlack.LogQuery;
+using AzureMonitorAlertToSlack.Slack;
 using AzureMonitorCommonAlertSchemaTypes;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts.LogAlertsV2;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace AzureFunctionAlert2Slack
 {
@@ -57,6 +54,21 @@ namespace AzureFunctionAlert2Slack
             }
         }
 
+        public override void LogAlertsV2AlertContext(Alert alert, LogAlertsV2AlertContext ctx, LogQueryCriteria[] criteria)
+        {
+            CreateResult(alert, null);
+
+            foreach (var criterion in criteria)
+            {
+                var item = CreatePartFromV2ConditionPart(alert, ctx, criterion);
+                item.TitleLink = (criterion.LinkToFilteredSearchResultsUi ?? criterion.LinkToSearchResultsUi)?.ToString();
+
+                Result.Parts.Add(item);
+            }
+            PostProcess();
+        }
+
+
         protected override SummarizedAlertPart CreatePartFromV2ConditionPart(Alert alert, LogAlertsV2AlertContext ctx, IConditionPart? conditionPart)
         {
             SummarizedAlertPart part;
@@ -64,7 +76,8 @@ namespace AzureFunctionAlert2Slack
             {
                 part = CreatePart();
                 var metric = string.IsNullOrEmpty(lq.MetricMeasureColumn) ? lq.TimeAggregation : lq.MetricMeasureColumn;
-                part.Text = $"{metric}: {lq.MetricValue} {lq.OperatorToken} {lq.Threshold} ({ctx.Condition.GetUserFriendlyTimeWindowString()})\nQuery:{lq.SearchQuery.Replace("\n", "").Truncate(100)}";
+                var cause = $"{metric}: {lq.MetricValue} {lq.OperatorToken} {lq.Threshold}";
+                part.Text = $"`{cause} ({ctx.Condition.GetUserFriendlyTimeWindowString()})`";
 
                 if (ctx.Properties.TryGetValue("queryTransform", out var queryTransform))
                 {
@@ -76,6 +89,12 @@ namespace AzureFunctionAlert2Slack
                 if (ctx.Properties.TryGetValue("querySuffix", out var querySuffix))
                     // TODO: ugly to modify the actual property...
                     lq.SearchQuery = $"{lq.SearchQuery.Trim()}{(string.IsNullOrEmpty(querySuffix) ? "" : $"\n{querySuffix}")}";
+
+                var additional = QueryAIToText(lq.TargetResourceTypes, lq.SearchQuery, ctx.Condition.WindowStartTime, ctx.Condition.WindowEndTime).Result;
+                if (!string.IsNullOrEmpty(additional))
+                    part.Text += $"\n{SlackHelpers.Escape(additional!)}";
+
+                part.Text += $"\n`Query:{lq.SearchQuery.Replace("\\n", "").Truncate(100)}`";
             }
             else
                 part = base.CreatePartFromV2ConditionPart (alert, ctx, conditionPart);
