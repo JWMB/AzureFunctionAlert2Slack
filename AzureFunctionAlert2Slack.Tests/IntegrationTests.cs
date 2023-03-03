@@ -3,10 +3,6 @@ using AzureMonitorCommonAlertSchemaTypes.AlertContexts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using AzureMonitorCommonAlertSchemaTypes;
-using AzureMonitorCommonAlertSchemaTypes.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using AutoFixture.Kernel;
 using Shouldly;
 using Microsoft.AspNetCore.Mvc;
 
