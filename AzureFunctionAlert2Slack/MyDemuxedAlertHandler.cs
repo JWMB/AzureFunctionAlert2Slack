@@ -97,7 +97,7 @@ namespace AzureFunctionAlert2Slack
                 if (!string.IsNullOrEmpty(additional))
                     part.Text += $"\n{SlackHelpers.Escape(additional!)}";
 
-                part.Text += $"\n`Query:{lq.SearchQuery.Replace("\\n", "").Truncate(100)}`";
+                part.Text += $"\n`Query:{lq.SearchQuery.Replace("\n", "").Replace("\r", "").Truncate(100)}`";
             }
             else
                 part = base.CreatePartFromV2ConditionPart (alert, ctx, conditionPart);
