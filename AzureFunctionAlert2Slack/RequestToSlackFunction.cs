@@ -108,10 +108,13 @@ namespace AzureFunctionAlert2Slack
 
         private async Task SendMessage(SummarizedAlert summary)
         {
-            var slackBody = messageFactory.CreateMessage(summary);
+            var messages = messageFactory.CreateMessages(summary);
             string? webhook = null;
             summary.CustomProperties?.TryGetValue("slackWebhook", out webhook);
-            await slackClient.Send(slackBody, webhook);
+            foreach (var message in messages)
+            {
+                await slackClient.Send(message, webhook);
+            }
         }
     }
 }

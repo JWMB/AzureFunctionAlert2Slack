@@ -33,7 +33,7 @@ namespace AzureFunctionAlert2Slack.Tests
             slackClient = mSlackClient.Object;
 
             var mMessageFactory = new Mock<ISlackMessageFactoryTyped>();
-            mMessageFactory.Setup(o => o.CreateMessage(It.IsAny<SummarizedAlert>())).Returns(new SlackNet.WebApi.Message());
+            mMessageFactory.Setup(o => o.CreateMessages(It.IsAny<SummarizedAlert>())).Returns(new List<SlackNet.WebApi.Message> { new SlackNet.WebApi.Message() });
             messageFactory = mMessageFactory.Object;
 
             function = new RequestToSlackFunction(summaryFactory, slackClient, messageFactory, fixture.Create<DebugSettings>(), fixture.Create<ILogger<RequestToSlackFunction>>());
@@ -47,7 +47,7 @@ namespace AzureFunctionAlert2Slack.Tests
             result.ShouldBeAssignableTo<OkObjectResult>();
 
             Mock.Get(summaryFactory).Verify(o => o.Process(It.IsAny<string>()), Times.Once);
-            Mock.Get(messageFactory).Verify(o => o.CreateMessage(It.IsAny<SummarizedAlert>()), Times.Once);
+            Mock.Get(messageFactory).Verify(o => o.CreateMessages(It.IsAny<SummarizedAlert>()), Times.Once);
         }
 
         [Fact]

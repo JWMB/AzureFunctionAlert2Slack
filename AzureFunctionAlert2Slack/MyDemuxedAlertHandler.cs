@@ -1,10 +1,13 @@
-﻿using AzureMonitorAlertToSlack.Alerts;
+﻿using AzureMonitorAlertToSlack;
+using AzureMonitorAlertToSlack.Alerts;
 using AzureMonitorAlertToSlack.LogQuery;
 using AzureMonitorAlertToSlack.Slack;
 using AzureMonitorCommonAlertSchemaTypes;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts;
 using AzureMonitorCommonAlertSchemaTypes.AlertContexts.LogAlertsV2;
 using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace AzureFunctionAlert2Slack
@@ -102,12 +105,22 @@ namespace AzureFunctionAlert2Slack
             return part;
         }
 
+        protected override string RenderDataTable(DataTable dt)
+        {
+            var stringifyer = new ConvertToString();
+            return $"```\n{TableHelpers.TableToMarkdown(dt, (obj, col) => stringifyer.Convert(obj, col.DataType, IsExpandedColumn(col) ? 70 : 20), 15)}\n```";
+
+            bool IsExpandedColumn(DataColumn col) => col.ColumnName.ToLower().Contains("message");
+        }
+
+
         private string GetCustomProperty(SummarizedAlert item, string key, string defaultValue = "") =>
                 item.CustomProperties?.GetValueOrDefault(key, defaultValue) ?? defaultValue;
 
         private void SetColor(SummarizedAlertPart part, Alert alert)
         {
             var severity = alert.Data.Essentials.Severity?.ToLower();
+            // grabbed colors from screenshots of colors in Azure portal
             switch (severity)
             {
                 case "sev0":
