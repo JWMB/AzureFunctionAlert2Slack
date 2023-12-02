@@ -45,7 +45,7 @@ namespace AzureFunctionAlert2Slack.Tests
                     DefaultWebhook = "1"
                 }
             };
-            var flatDict = ConfigurationHelpers.ObjectToFlatDictionary(appSettings, "AppSettings").ToDictionary(o => o.key, o => o.value);
+            var flatDict = ConfigurationHelpers.ObjectToFlatDictionary(appSettings, "AppSettings").ToDictionary(o => o.key, o => (string?)o.value);
 
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(flatDict)
