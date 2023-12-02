@@ -15,6 +15,7 @@ namespace AzureFunctionAlert2Slack.Tests
 
         }
 
+        [Trait("Category", "Integration")]
         [SkippableFact]
         public async Task Integration()
         {
